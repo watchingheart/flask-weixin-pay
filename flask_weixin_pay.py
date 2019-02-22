@@ -5,7 +5,7 @@ import time
 import string
 import random
 import hashlib
-import urllib2
+import urllib
 
 from collections import namedtuple
 
@@ -40,7 +40,7 @@ class WeixinPayError(Exception):
 class WeixinPay(object):
 
     def __init__(self, app=None):
-        self.opener = urllib2.build_opener(urllib2.HTTPSHandler())
+        self.opener = urllib.request.build_opener(urllib.request.HTTPSHandler())
 
         if isinstance(app, dict):
             app = StandaloneApplication(config=app)
@@ -102,7 +102,7 @@ class WeixinPay(object):
         char = string.ascii_letters + string.digits
         return "".join(random.choice(char) for _ in range(32))
 
-    to_utf8 = lambda self, x: x.encode("utf-8") if isinstance(x, unicode) else x
+    to_utf8 = lambda self, x: x.encode("utf-8") if isinstance(x, str) else x
 
     def sign(self, raw):
         """
@@ -125,9 +125,9 @@ class WeixinPay(object):
 
     def to_xml(self, raw):
         s = ""
-        for k, v in raw.iteritems():
-            s += "<{0}>{1}</{0}>".format(k, self.to_utf8(v), k)
-        return "<xml>{0}</xml>".format(s)
+        for k, v in raw.items():
+            s += f"<{k}>{v}</{k}>"
+        return "<xml>{0}</xml>".format(s).encode('utf-8')
 
     def to_dict(self, content):
         raw = {}
@@ -137,12 +137,12 @@ class WeixinPay(object):
         return raw
 
     def fetch(self, url, data):
-        req = urllib2.Request(url, data=self.to_xml(data))
+        req = urllib.request.Request(url, data=self.to_xml(data))
         try:
             resp = self.opener.open(req, timeout=20)
-        except urllib2.HTTPError, e:
+        except urllib.error.HTTPError as e:
             resp = e
-        return self.to_dict(resp.read())
+        return self.to_dict(resp.read().decode('utf-8'))
 
     def reply(self, msg, ok=True):
         code = "SUCCESS" if ok else "FAIL"
